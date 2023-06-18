@@ -6,7 +6,6 @@
  *                                                                                                *
  ************************************************************************************************ */
 
-
 /**
  * Returns the rectangle object with width and height parameters and getArea() method
  *
@@ -20,10 +19,12 @@
  *    console.log(r.height);      // => 20
  *    console.log(r.getArea());   // => 200
  */
-function Rectangle(/* width, height */) {
-  throw new Error('Not implemented');
-}
+function Rectangle(width, height) {
+  this.width = width;
+  this.height = height;
 
+  this.getArea = () => this.width * this.height;
+}
 
 /**
  * Returns the JSON representation of specified object
@@ -35,10 +36,9 @@ function Rectangle(/* width, height */) {
  *    [1,2,3]   =>  '[1,2,3]'
  *    { width: 10, height : 20 } => '{"height":10,"width":20}'
  */
-function getJSON(/* obj */) {
-  throw new Error('Not implemented');
+function getJSON(obj) {
+  return JSON.stringify(obj);
 }
-
 
 /**
  * Returns the object of specified type from JSON representation
@@ -51,10 +51,11 @@ function getJSON(/* obj */) {
  *    const r = fromJSON(Circle.prototype, '{"radius":10}');
  *
  */
-function fromJSON(/* proto, json */) {
-  throw new Error('Not implemented');
+function fromJSON(proto, json) {
+  const parsedObj = JSON.parse(json);
+  Object.setPrototypeOf(parsedObj, proto);
+  return parsedObj;
 }
-
 
 /**
  * Css selectors builder
@@ -62,7 +63,7 @@ function fromJSON(/* proto, json */) {
  * Each complex selector can consists of type, id, class, attribute, pseudo-class
  * and pseudo-element selectors:
  *
- *    element#id.class[attr]:pseudoClass::pseudoElement
+ *    element#id.class[attr]:pseudoClass::cssPseudoElement
  *              \----/\----/\----------/
  *              Can be several occurrences
  *
@@ -110,36 +111,137 @@ function fromJSON(/* proto, json */) {
  *  For more examples see unit tests.
  */
 
+// prettier-ignore
+class CssBuilder {
+  constructor(value = '') {
+    this.combinedRes = '';
+    if (value) {
+      this.combinedRes += value;
+    }
+    this.cssElement = '';
+    this.cssPseudoElement = '';
+    this.cssId = '';
+    this.cssClass = '';
+    this.cssAttribute = '';
+    this.cssPseudoClass = '';
+    this.cssElementCount = 0;
+    this.cssIdCount = 0;
+    this.cssPseudoElementCount = 0;
+    this.order = [];
+  }
+
+  element(value) {
+    if (this.cssElementCount === 1) throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+
+    if (this.order.length === 0) this.order.push(1);
+    else throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+
+    this.cssElement = value;
+    this.cssElementCount += 1;
+    return this;
+  }
+
+  id(value) {
+    if (this.cssIdCount === 1) throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+
+    if (this.order.length === 0) this.order.push(2);
+    if (this.order[this.order.length - 1] > 2) throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    else this.order.push(2);
+
+    this.cssId = `#${value}`;
+    this.cssIdCount += 1;
+    return this;
+  }
+
+  class(value) {
+    if (this.order.length === 0) this.order.push(3);
+    if (this.order[this.order.length - 1] > 3) throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    else this.order.push(3);
+
+    this.cssClass += `.${value}`;
+    return this;
+  }
+
+  attr(value) {
+    if (this.order.length === 0) this.order.push(4);
+    if (this.order[this.order.length - 1] > 4) throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    else this.order.push(4);
+
+    this.cssAttribute = `[${value}]`;
+    return this;
+  }
+
+  pseudoClass(value) {
+    if (this.order.length === 0) this.order.push(5);
+    if (this.order[this.order.length - 1] > 5) throw new Error('Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element');
+    else this.order.push(5);
+
+    this.cssPseudoClass += `:${value}`;
+    return this;
+  }
+
+  pseudoElement(value) {
+    if (this.cssPseudoElementCount === 1) throw new Error('Element, id and pseudo-element should not occur more then one time inside the selector');
+
+    if (this.order.length === 0) this.order.push(6);
+
+    this.cssPseudoElement = `::${value}`;
+    this.cssPseudoElementCount += 1;
+    return this;
+  }
+
+  stringify() {
+    return `${this.cssElement}${this.cssId}${this.cssClass}${this.cssAttribute}${this.cssPseudoClass}${this.cssPseudoElement}${this.combinedRes}`;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    const tmp = new CssBuilder();
+    tmp.element(value);
+    return tmp;
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const tmp = new CssBuilder();
+    tmp.id(value);
+    return tmp;
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const tmp = new CssBuilder();
+    tmp.class(value);
+    return tmp;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const tmp = new CssBuilder();
+    tmp.attr(value);
+    return tmp;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const tmp = new CssBuilder();
+    tmp.pseudoClass(value);
+    return tmp;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    const tmp = new CssBuilder();
+    tmp.pseudoElement(value);
+    return tmp;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  stringify() {
+    const tmp = new CssBuilder();
+    return tmp;
+  },
+
+  combine(selector1, combinator, selector2) {
+    // prettier-ignore
+    return new CssBuilder(`${selector1.stringify()} ${combinator} ${selector2.stringify()}`);
   },
 };
-
 
 module.exports = {
   Rectangle,
